@@ -180,7 +180,29 @@ footer strong{color:rgba(255,255,255,.6)}
 .toast{position:fixed;bottom:1.2rem;right:1.2rem;background:#1a2332;color:#fff;padding:.65rem 1.05rem;border-radius:10px;font-size:.83rem;font-weight:500;transform:translateY(70px);opacity:0;transition:all .3s;z-index:999;pointer-events:none}
 .toast.show{transform:translateY(0);opacity:1}
 
-/* ── PANNEAU PERSONNALISATION HERO ── */
+/* ── MODE ADMIN ── */
+.admin-only{display:none!important}
+body.admin .admin-only{display:flex!important}
+body.admin .admin-only-block{display:block!important}
+.admin-only-block{display:none!important}
+/* lock btn discret dans footer */
+.lock-btn{background:none;border:none;cursor:pointer;font-size:.85rem;color:rgba(255,255,255,.25);padding:.2rem .4rem;border-radius:4px;transition:color .2s}
+.lock-btn:hover{color:rgba(255,255,255,.6)}
+/* badge admin dans nav */
+.admin-badge{display:none;background:var(--teal);color:#fff;font-size:.65rem;font-weight:700;padding:.12rem .45rem;border-radius:50px;margin-left:.3rem;vertical-align:middle}
+body.admin .admin-badge{display:inline}
+/* password modal */
+.pwd-overlay{display:none;position:fixed;inset:0;background:rgba(13,27,42,.75);z-index:600;align-items:center;justify-content:center;backdrop-filter:blur(4px)}
+.pwd-overlay.open{display:flex}
+.pwd-box{background:#fff;border-radius:16px;padding:2rem;max-width:340px;width:90%;text-align:center;box-shadow:0 20px 50px rgba(0,0,0,.3)}
+.pwd-box h4{font-family:'DM Serif Display',serif;font-size:1.2rem;margin-bottom:.4rem}
+.pwd-box p{font-size:.82rem;color:var(--muted);margin-bottom:1.2rem;line-height:1.5}
+.pwd-input{width:100%;padding:.7rem 1rem;border:2px solid var(--bd);border-radius:8px;font-size:1rem;text-align:center;letter-spacing:.1em;outline:none;transition:border-color .2s;font-family:'DM Sans',sans-serif;margin-bottom:.8rem}
+.pwd-input:focus{border-color:var(--teal)}
+.pwd-input.error{border-color:#e63946;animation:shake .3s}
+@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+.pwd-btns{display:flex;gap:.5rem}
+.pwd-hint{font-size:.72rem;color:#e63946;margin-top:.4rem;min-height:1rem}
 .hero-panel-overlay{display:none;position:fixed;inset:0;background:rgba(13,27,42,.7);z-index:500;align-items:center;justify-content:center;padding:1rem;backdrop-filter:blur(3px)}
 .hero-panel-overlay.open{display:flex}
 .hero-panel{background:#fff;border-radius:18px;max-width:520px;width:100%;max-height:90vh;overflow-y:auto;box-shadow:0 24px 64px rgba(0,0,0,.3)}
@@ -218,7 +240,7 @@ footer strong{color:rgba(255,255,255,.6)}
 <!-- ══ NAV ══ -->
 <nav>
   <div class="nav-inner">
-    <div class="nav-logo">⚗️ <span>Delande</span>Prof</div>
+    <div class="nav-logo">⚗️ <span>Delande</span>Prof<span class="admin-badge">PROF</span></div>
     <ul class="nav-links" id="nav-links">
       <!-- rendered by JS -->
     </ul>
@@ -234,7 +256,7 @@ footer strong{color:rgba(255,255,255,.6)}
     <div class="hero-overlay" id="hero-overlay"></div>
 
     <!-- ══ BOUTON PERSONNALISER ══ -->
-    <button class="hero-edit-btn" onclick="openHeroPanel()">✏️ Personnaliser</button>
+    <button class="hero-edit-btn admin-only" onclick="openHeroPanel()">✏️ Personnaliser</button>
 
     <!-- ══ CONTENU ══ -->
     <div class="hero-content">
@@ -278,14 +300,15 @@ footer strong{color:rgba(255,255,255,.6)}
     </div>
     <div class="modal-body">
       <div class="pdf-list" id="m-pdf-list"></div>
-      <div class="drop-zone" id="drop-zone"
+      <div class="drop-zone admin-only" id="drop-zone"
            ondragover="doDragOver(event)" ondragleave="doDragLeave()" ondrop="doDrop(event)">
         <input type="file" accept="application/pdf" multiple id="file-input" onchange="onFileInput(event)">
         <div class="drop-icon">📄</div>
         <h4>Déposez un ou plusieurs PDF ici</h4>
         <p>ou <span class="drop-link">cliquez pour sélectionner</span></p>
       </div>
-      <div class="info-box">💡 Les PDF sont enregistrés dans votre navigateur. Pour les partager sur GitHub Pages, placez vos fichiers dans un dossier <code>pdfs/</code> et créez des liens directs.</div>
+      <div class="info-box admin-only-block">💡 Les PDF sont enregistrés dans votre navigateur. Pour les partager sur GitHub Pages, placez vos fichiers dans un dossier <code>pdfs/</code> et créez des liens directs.</div>
+      <div id="m-no-pdf" style="display:none;text-align:center;padding:1.5rem;color:var(--muted);font-size:.88rem">Aucune fiche disponible pour le moment.</div>
     </div>
   </div>
 </div>
@@ -367,7 +390,26 @@ footer strong{color:rgba(255,255,255,.6)}
   </div>
 </div>
 
-<footer>Site de <strong>M. Delande</strong> — Terminale Spécialité Physique-Chimie &nbsp;·&nbsp; GitHub Pages</footer>
+<!-- ══ MOT DE PASSE PROF ══ -->
+<div class="pwd-overlay" id="pwd-overlay" onclick="closePwdOutside(event)">
+  <div class="pwd-box">
+    <div style="font-size:2rem;margin-bottom:.5rem" id="pwd-icon">🔒</div>
+    <h4 id="pwd-title">Accès professeur</h4>
+    <p id="pwd-desc">Entrez le mot de passe pour activer le mode édition.</p>
+    <input class="pwd-input" type="password" id="pwd-input" placeholder="••••••••"
+           onkeydown="if(event.key==='Enter') checkPwd()">
+    <div class="pwd-hint" id="pwd-hint"></div>
+    <div class="pwd-btns">
+      <button class="btn btn-ghost btn-sm" style="flex:1" onclick="closePwd()">Annuler</button>
+      <button class="btn btn-primary btn-sm" style="flex:1" onclick="checkPwd()" id="pwd-btn">Valider</button>
+    </div>
+  </div>
+</div>
+
+<footer>
+  Site de <strong>M. Delande</strong> — Terminale Spécialité Physique-Chimie &nbsp;·&nbsp; GitHub Pages
+  &nbsp;&nbsp;<button class="lock-btn" id="lock-btn" onclick="openPwd()" title="Espace professeur">🔒</button>
+</footer>
 
 <script>
 // ════════════════════════════════════════════
@@ -468,7 +510,63 @@ function defaultData2(){
 }
 
 // ════════════════════════════════════════════
-//  NAV
+//  ADMIN / MOT DE PASSE
+// ════════════════════════════════════════════
+const ADMIN_PWD = 'prof2024'; // ← changez ce mot de passe ici
+let isAdmin = false;
+
+function setAdminMode(on){
+  isAdmin = on;
+  if(on){
+    document.body.classList.add('admin');
+    sessionStorage.setItem('dp_admin','1');
+    document.getElementById('lock-btn').textContent = '🔓';
+    document.getElementById('lock-btn').title = 'Quitter le mode édition';
+  } else {
+    document.body.classList.remove('admin');
+    sessionStorage.removeItem('dp_admin');
+    document.getElementById('lock-btn').textContent = '🔒';
+    document.getElementById('lock-btn').title = 'Espace professeur';
+  }
+  // Re-render pour appliquer/retirer les contrôles d'édition
+  renderNav();
+  ['t1','t2','t3'].forEach(t=>renderTrim(t));
+  renderGeneric('bac');
+  renderGeneric('ressources');
+  updateStats();
+}
+
+function openPwd(){
+  if(isAdmin){ // déjà connecté → proposer de se déconnecter
+    if(confirm('Quitter le mode édition professeur ?')) setAdminMode(false);
+    return;
+  }
+  document.getElementById('pwd-input').value='';
+  document.getElementById('pwd-hint').textContent='';
+  document.getElementById('pwd-input').classList.remove('error');
+  document.getElementById('pwd-overlay').classList.add('open');
+  setTimeout(()=>document.getElementById('pwd-input').focus(),100);
+}
+function closePwd(){ document.getElementById('pwd-overlay').classList.remove('open'); }
+function closePwdOutside(e){ if(e.target===document.getElementById('pwd-overlay')) closePwd(); }
+
+function checkPwd(){
+  const val = document.getElementById('pwd-input').value;
+  if(val === ADMIN_PWD){
+    closePwd();
+    setAdminMode(true);
+    showToast('✅ Mode édition activé — bienvenue M. Delande !');
+  } else {
+    const inp = document.getElementById('pwd-input');
+    inp.classList.add('error');
+    document.getElementById('pwd-hint').textContent = 'Mot de passe incorrect.';
+    inp.value='';
+    setTimeout(()=>inp.classList.remove('error'),400);
+  }
+}
+
+// ════════════════════════════════════════════
+//  ADMIN — nav labels (édition conditionnelle)
 // ════════════════════════════════════════════
 const ALL_TABS = ['home','t1','t2','t3','bac','ressources'];
 
@@ -481,31 +579,29 @@ function renderNav(){
     a.dataset.sec = id;
     if(id === currentSection) a.classList.add('active');
 
-    const label = document.createElement('span');
-    label.className = 'nav-label';
-    label.contentEditable = true;
-    label.spellcheck = false;
-    label.textContent = DATA.navLabels[id];
-    label.title = 'Cliquez pour renommer cet onglet';
+    if(isAdmin){
+      const label = document.createElement('span');
+      label.className = 'nav-label';
+      label.contentEditable = true;
+      label.spellcheck = false;
+      label.textContent = DATA.navLabels[id];
+      label.title = 'Cliquez pour renommer';
+      const hint = document.createElement('span');
+      hint.className = 'edit-hint'; hint.textContent = '✎';
+      label.addEventListener('click', e => e.stopPropagation());
+      label.addEventListener('blur', () => {
+        const v = label.textContent.trim();
+        if(v){ DATA.navLabels[id] = v; saveData(); updateHomeGrid(); }
+        else { label.textContent = DATA.navLabels[id]; }
+      });
+      label.addEventListener('keydown', e => { if(e.key==='Enter'){ e.preventDefault(); label.blur(); } });
+      a.appendChild(label); a.appendChild(hint);
+      a.addEventListener('click', e => { if(e.target===label||e.target===hint) return; showSection(id); });
+    } else {
+      a.textContent = DATA.navLabels[id];
+      a.addEventListener('click', () => showSection(id));
+    }
 
-    const hint = document.createElement('span');
-    hint.className = 'edit-hint';
-    hint.textContent = '✎';
-
-    label.addEventListener('click', e => e.stopPropagation());
-    label.addEventListener('blur', () => {
-      const v = label.textContent.trim();
-      if(v){ DATA.navLabels[id] = v; saveData(); updateHomeGrid(); }
-      else { label.textContent = DATA.navLabels[id]; }
-    });
-    label.addEventListener('keydown', e => { if(e.key==='Enter'){ e.preventDefault(); label.blur(); } });
-
-    a.appendChild(label);
-    a.appendChild(hint);
-    a.addEventListener('click', e => {
-      if(e.target === label || e.target === hint) return;
-      showSection(id);
-    });
     li.appendChild(a);
     ul.appendChild(li);
   });
@@ -554,7 +650,7 @@ function renderTrim(t){
   const hdr = el('div','sec-hdr');
   hdr.innerHTML = `<div class="sec-hdr-txt">
     <h2>${DATA.navLabels[t]}</h2>
-    <p>Cliquez sur un chapitre pour déposer un PDF. <strong>Cliquez sur le numéro ou le titre pour le modifier.</strong></p>
+    <p>Cliquez sur un chapitre pour accéder à la fiche PDF.${isAdmin?' <strong>Cliquez sur le numéro ou le titre pour le modifier.</strong>':''}</p>
   </div>`;
   c.appendChild(hdr);
 
@@ -567,11 +663,13 @@ function renderTrim(t){
 
     DATA[t][subj].forEach(ch => col.appendChild(makeChapterCard(t,subj,ch)));
 
-    const addBtn = document.createElement('button');
-    addBtn.className = 'add-chapter';
-    addBtn.innerHTML = '＋ Ajouter un chapitre';
-    addBtn.onclick = ()=>addChapter(t,subj);
-    col.appendChild(addBtn);
+    if(isAdmin){
+      const addBtn = document.createElement('button');
+      addBtn.className = 'add-chapter';
+      addBtn.innerHTML = '＋ Ajouter un chapitre';
+      addBtn.onclick = ()=>addChapter(t,subj);
+      col.appendChild(addBtn);
+    }
     grid.appendChild(col);
   });
   c.appendChild(grid);
@@ -583,12 +681,12 @@ function makeChapterCard(trim,subj,ch){
   card.id = 'card-'+ch.id;
   card.innerHTML = `
     <div class="card-left">
-      <span class="card-tag ${subj}" contenteditable="true" spellcheck="false" title="Modifier le numéro">${escHtml(ch.tag)}</span>
-      <div class="card-title" contenteditable="true" spellcheck="false" title="Modifier le titre">${escHtml(ch.title)}</div>
+      <span class="card-tag ${subj}" ${isAdmin?'contenteditable="true" spellcheck="false" title="Modifier le numéro"':''}>${escHtml(ch.tag)}</span>
+      <div class="card-title" ${isAdmin?'contenteditable="true" spellcheck="false" title="Modifier le titre"':''}>${escHtml(ch.title)}</div>
     </div>
     <div class="card-right">
       <span class="pdf-pill ${pdfs.length?'has':'empty'}" id="pill-${ch.id}">${pdfs.length?pdfs.length+' PDF':'Aucun PDF'}</span>
-      <button class="del-card" title="Supprimer">✕</button>
+      ${isAdmin?'<button class="del-card" title="Supprimer">✕</button>':''}
     </div>`;
 
   const tagEl   = card.querySelector('.card-tag');
@@ -633,12 +731,14 @@ function renderGeneric(secId){
   const grid = el('div','generic-grid');
   DATA[secId].cards.forEach(card => grid.appendChild(makeGenericCard(secId,card)));
 
-  const addBtn = document.createElement('button');
-  addBtn.className = 'add-generic';
-  addBtn.innerHTML = '＋ Ajouter une fiche';
-  addBtn.onclick = ()=>addGenericCard(secId);
   c.appendChild(grid);
-  c.appendChild(addBtn);
+  if(isAdmin){
+    const addBtn = document.createElement('button');
+    addBtn.className = 'add-generic';
+    addBtn.innerHTML = '＋ Ajouter une fiche';
+    addBtn.onclick = ()=>addGenericCard(secId);
+    c.appendChild(addBtn);
+  }
 }
 
 function makeGenericCard(secId, card){
@@ -650,12 +750,12 @@ function makeGenericCard(secId, card){
       <div class="generic-card-ico" style="background:${card.color||'#f0f0f0'}">${card.icon||'📄'}</div>
       <div class="generic-card-actions">
         <span class="pdf-pill ${pdfs.length?'has':'empty'}" id="pill-${card.id}">${pdfs.length?pdfs.length+' PDF':'Aucun PDF'}</span>
-        <button class="generic-del" title="Supprimer">✕</button>
+        ${isAdmin?'<button class="generic-del" title="Supprimer">✕</button>':''}
       </div>
     </div>
-    <div class="g-meta" contenteditable="true" spellcheck="false" title="Modifier (ex: numéro, date…)">${escHtml(card.meta||'')}</div>
-    <div class="g-title" contenteditable="true" spellcheck="false" title="Modifier le titre">${escHtml(card.title)}</div>
-    <div class="g-desc"  contenteditable="true" spellcheck="false" title="Modifier la description">${escHtml(card.desc||'')}</div>`;
+    <div class="g-meta"  ${isAdmin?'contenteditable="true" spellcheck="false" title="Modifier"':''}>${escHtml(card.meta||'')}</div>
+    <div class="g-title" ${isAdmin?'contenteditable="true" spellcheck="false" title="Modifier le titre"':''}>${escHtml(card.title)}</div>
+    <div class="g-desc"  ${isAdmin?'contenteditable="true" spellcheck="false" title="Modifier la description"':''}>${escHtml(card.desc||'')}</div>`;
 
   const metaEl  = div.querySelector('.g-meta');
   const titleEl = div.querySelector('.g-title');
@@ -699,12 +799,19 @@ document.addEventListener('keydown',e=>{ if(e.key==='Escape'){ closeModal(); clo
 function renderPdfList(){
   const pdfs = getPdfs(currentChapId);
   const list = document.getElementById('m-pdf-list');
+  const noPdf = document.getElementById('m-no-pdf');
+  if(!pdfs.length){
+    list.innerHTML = '';
+    noPdf.style.display = isAdmin ? 'none' : 'block';
+    return;
+  }
+  noPdf.style.display = 'none';
   list.innerHTML = pdfs.map((p,i)=>`
     <div class="pdf-item">
       <div class="pdf-icon">PDF</div>
       <div style="flex:1;overflow:hidden"><div class="pdf-name">${escHtml(p.name)}</div><div class="pdf-size">${fmtSize(p.size)}</div></div>
       <a class="btn-dl" href="${p.data}" download="${escHtml(p.name)}">⬇ Télécharger</a>
-      <button class="btn-del-pdf" onclick="deletePdf(${i})" title="Supprimer">🗑</button>
+      ${isAdmin?`<button class="btn-del-pdf" onclick="deletePdf(${i})" title="Supprimer">🗑</button>`:''}
     </div>`).join('');
 }
 
@@ -910,6 +1017,9 @@ function removeHeroBg(){
 ALL_TABS.forEach(id=>{ if(!DATA.navLabels[id]) DATA.navLabels[id]=defaultSections().navLabels[id]||id; });
 if(!DATA.bac)       { DATA.bac=defaultData2().bac; }
 if(!DATA.ressources){ DATA.ressources=defaultData2().ressources; }
+
+// Restaurer session admin si déjà connecté
+if(sessionStorage.getItem('dp_admin')==='1'){ isAdmin=true; document.body.classList.add('admin'); }
 
 renderNav();
 updateHomeGrid();
