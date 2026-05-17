@@ -132,11 +132,22 @@ section{display:none}section.active{display:block}
 .modal-body{padding:1.3rem 1.6rem;overflow-y:auto;flex:1}
 
 /* ── PDF UI ── */
+/* ── LISTE FICHIERS ── */
 .pdf-list{margin-bottom:1.2rem}
-.pdf-item{display:flex;align-items:center;gap:.65rem;background:#f0faf6;border:1px solid #b2e8ce;border-radius:10px;padding:.65rem .85rem;margin-bottom:.45rem}
+.pdf-item{display:flex;align-items:center;gap:.65rem;background:#f0faf6;border:1px solid #b2e8ce;border-radius:10px;padding:.65rem .85rem;margin-bottom:.5rem}
+.pdf-num{width:24px;height:24px;border-radius:50%;background:var(--teal);color:#fff;font-size:.72rem;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0}
 .pdf-icon{width:34px;height:34px;border-radius:7px;background:#1a8a52;color:#fff;display:flex;align-items:center;justify-content:center;font-size:.62rem;font-weight:800;flex-shrink:0;letter-spacing:.02em}
+.pdf-icon.img-icon{background:#8338ec}
 .pdf-name{flex:1;font-size:.84rem;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .pdf-size{font-size:.71rem;color:var(--muted);white-space:nowrap}
+/* Galerie images */
+.img-gallery{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:.7rem;margin-bottom:1.2rem}
+.img-thumb{border-radius:10px;overflow:hidden;border:2px solid var(--bd);position:relative;background:#f5f5f5;aspect-ratio:4/3}
+.img-thumb img{width:100%;height:100%;object-fit:cover;display:block}
+.img-thumb-bar{position:absolute;bottom:0;left:0;right:0;background:rgba(13,27,42,.75);padding:.3rem .5rem;display:flex;align-items:center;justify-content:space-between;gap:.3rem}
+.img-thumb-name{font-size:.65rem;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1}
+.img-thumb-dl{display:inline-flex;align-items:center;padding:.18rem .4rem;border-radius:4px;font-size:.68rem;font-weight:700;background:var(--teal);color:#fff;text-decoration:none;flex-shrink:0}
+.img-thumb-del{background:none;border:none;color:rgba(255,255,255,.7);cursor:pointer;font-size:.75rem;padding:0;flex-shrink:0}
 .btn-dl{display:inline-flex;align-items:center;gap:.25rem;padding:.36rem .8rem;border-radius:6px;font-size:.76rem;font-weight:600;cursor:pointer;border:none;background:var(--teal);color:#fff;text-decoration:none;font-family:'DM Sans',sans-serif;transition:background .15s;white-space:nowrap}
 .btn-dl:hover{background:var(--teal-dk)}
 .btn-del-pdf{display:inline-flex;align-items:center;padding:.36rem .5rem;border-radius:6px;font-size:.8rem;cursor:pointer;border:none;background:#fff0f0;color:#c00;transition:background .15s}
@@ -299,16 +310,17 @@ body.admin .admin-badge{display:inline}
       <div style="font-family:'DM Serif Display',serif;font-size:1.32rem;color:var(--navy)" id="m-title"></div>
     </div>
     <div class="modal-body">
+      <div id="m-img-gallery" class="img-gallery" style="display:none"></div>
       <div class="pdf-list" id="m-pdf-list"></div>
       <div class="drop-zone admin-only" id="drop-zone"
            ondragover="doDragOver(event)" ondragleave="doDragLeave()" ondrop="doDrop(event)">
-        <input type="file" accept="application/pdf" multiple id="file-input" onchange="onFileInput(event)">
-        <div class="drop-icon">📄</div>
-        <h4>Déposez un ou plusieurs PDF ici</h4>
+        <input type="file" multiple id="file-input" onchange="onFileInput(event)">
+        <div class="drop-icon" id="drop-icon">📄</div>
+        <h4 id="drop-title">Déposez un ou plusieurs PDF ici</h4>
         <p>ou <span class="drop-link">cliquez pour sélectionner</span></p>
       </div>
-      <div class="info-box admin-only-block">💡 Les PDF sont enregistrés dans votre navigateur. Pour les partager sur GitHub Pages, placez vos fichiers dans un dossier <code>pdfs/</code> et créez des liens directs.</div>
-      <div id="m-no-pdf" style="display:none;text-align:center;padding:1.5rem;color:var(--muted);font-size:.88rem">Aucune fiche disponible pour le moment.</div>
+      <div class="info-box admin-only-block" id="m-info"></div>
+      <div id="m-no-pdf" style="display:none;text-align:center;padding:1.5rem;color:var(--muted);font-size:.88rem">Aucun fichier disponible pour le moment.</div>
     </div>
   </div>
 </div>
@@ -742,14 +754,20 @@ function renderGeneric(secId){
 }
 
 function makeGenericCard(secId, card){
-  const pdfs = getPdfs(card.id);
+  const files = getPdfs(card.id);
+  const hasPdf=files.some(f=>f.fileType==='pdf'||!f.fileType);
+  const hasImg=files.some(f=>f.fileType==='image');
+  const pillLabel = files.length===0 ? 'Aucun fichier'
+    : (hasPdf&&hasImg) ? files.length+' fichiers'
+    : hasImg ? files.length+(files.length>1?' images':' image')
+    : files.length+' PDF';
   const div = el('div','generic-card');
   div.id = 'card-'+card.id;
   div.innerHTML = `
     <div class="generic-card-top">
       <div class="generic-card-ico" style="background:${card.color||'#f0f0f0'}">${card.icon||'📄'}</div>
       <div class="generic-card-actions">
-        <span class="pdf-pill ${pdfs.length?'has':'empty'}" id="pill-${card.id}">${pdfs.length?pdfs.length+' PDF':'Aucun PDF'}</span>
+        <span class="pdf-pill ${files.length?'has':'empty'}" id="pill-${card.id}">${pillLabel}</span>
         ${isAdmin?'<button class="generic-del" title="Supprimer">✕</button>':''}
       </div>
     </div>
@@ -768,7 +786,7 @@ function makeGenericCard(secId, card){
 
   div.addEventListener('click', e=>{
     if([metaEl,titleEl,descEl,delBtn].includes(e.target)||e.target.classList.contains('generic-del')) return;
-    openModal(card.id, DATA.navLabels[secId]+' · '+card.title, card.title);
+    openModal(card.id, DATA.navLabels[secId]+' · '+card.title, card.title, secId);
   });
   delBtn.addEventListener('click', e=>{ e.stopPropagation(); askDelete('Supprimer cette fiche ?','Tous les PDF associés seront perdus.', ()=>{ DATA[secId].cards=DATA[secId].cards.filter(c=>c.id!==card.id); localStorage.removeItem('pdfs_'+card.id); saveData(); renderGeneric(secId); updateStats(); showToast('🗑 Fiche supprimée'); }); });
   return div;
@@ -785,64 +803,127 @@ function addGenericCard(secId){
 //  MODAL
 // ════════════════════════════════════════════
 let currentChapId = null;
-function openModal(chapId, meta, title){
+let currentSection_modal = null; // section d'origine du modal
+
+function openModal(chapId, meta, title, secId){
   currentChapId = chapId;
+  currentSection_modal = secId || null;
   document.getElementById('m-meta').textContent  = meta;
   document.getElementById('m-title').textContent = title;
-  renderPdfList();
+  // Adapter la zone de dépôt selon la section
+  const allowImg = (secId === 'ressources');
+  document.getElementById('file-input').accept = allowImg ? 'application/pdf,image/*' : 'application/pdf';
+  document.getElementById('drop-icon').textContent  = allowImg ? '📄🖼️' : '📄';
+  document.getElementById('drop-title').textContent = allowImg ? 'Déposez des PDF ou des images ici' : 'Déposez un ou plusieurs PDF ici';
+  document.getElementById('m-info').textContent = allowImg
+    ? '💡 PDF et images sont enregistrés dans votre navigateur (visibles sur cet appareil).'
+    : '💡 Les PDF sont enregistrés dans votre navigateur (visibles sur cet appareil).';
+  renderFileList();
   document.getElementById('modal').classList.add('open');
 }
 function closeModal(){ document.getElementById('modal').classList.remove('open'); }
 function closeModalOutside(e){ if(e.target===document.getElementById('modal')) closeModal(); }
 document.addEventListener('keydown',e=>{ if(e.key==='Escape'){ closeModal(); closeConfirm(); } });
 
-function renderPdfList(){
-  const pdfs = getPdfs(currentChapId);
-  const list = document.getElementById('m-pdf-list');
-  const noPdf = document.getElementById('m-no-pdf');
-  if(!pdfs.length){
-    list.innerHTML = '';
+function renderFileList(){
+  const files = getPdfs(currentChapId);
+  const pdfList  = document.getElementById('m-pdf-list');
+  const imgGal   = document.getElementById('m-img-gallery');
+  const noPdf    = document.getElementById('m-no-pdf');
+
+  if(!files.length){
+    pdfList.innerHTML=''; imgGal.innerHTML=''; imgGal.style.display='none';
     noPdf.style.display = isAdmin ? 'none' : 'block';
     return;
   }
-  noPdf.style.display = 'none';
-  list.innerHTML = pdfs.map((p,i)=>`
-    <div class="pdf-item">
+  noPdf.style.display='none';
+
+  // Séparer PDFs et images
+  const pdfs = files.filter(f=>f.fileType==='pdf'||!f.fileType);
+  const imgs = files.filter(f=>f.fileType==='image');
+
+  // ── PDFs : liste numérotée ──
+  pdfList.innerHTML = pdfs.map((p)=>{
+    const globalIdx = files.indexOf(p);
+    return `<div class="pdf-item">
+      <div class="pdf-num">${pdfs.indexOf(p)+1}</div>
       <div class="pdf-icon">PDF</div>
-      <div style="flex:1;overflow:hidden"><div class="pdf-name">${escHtml(p.name)}</div><div class="pdf-size">${fmtSize(p.size)}</div></div>
+      <div style="flex:1;overflow:hidden">
+        <div class="pdf-name">${escHtml(p.name)}</div>
+        <div class="pdf-size">${fmtSize(p.size)}</div>
+      </div>
       <a class="btn-dl" href="${p.data}" download="${escHtml(p.name)}">⬇ Télécharger</a>
-      ${isAdmin?`<button class="btn-del-pdf" onclick="deletePdf(${i})" title="Supprimer">🗑</button>`:''}
-    </div>`).join('');
+      ${isAdmin?`<button class="btn-del-pdf" onclick="deleteFile(${globalIdx})" title="Supprimer">🗑</button>`:''}
+    </div>`;
+  }).join('');
+
+  // ── Images : galerie vignettes ──
+  if(imgs.length){
+    imgGal.style.display='grid';
+    imgGal.innerHTML = imgs.map(img=>{
+      const globalIdx = files.indexOf(img);
+      return `<div class="img-thumb">
+        <img src="${img.data}" alt="${escHtml(img.name)}">
+        <div class="img-thumb-bar">
+          <span class="img-thumb-name">${escHtml(img.name)}</span>
+          <a class="img-thumb-dl" href="${img.data}" download="${escHtml(img.name)}" title="Télécharger">⬇</a>
+          ${isAdmin?`<button class="img-thumb-del" onclick="deleteFile(${globalIdx})" title="Supprimer">🗑</button>`:''}
+        </div>
+      </div>`;
+    }).join('');
+  } else {
+    imgGal.style.display='none'; imgGal.innerHTML='';
+  }
 }
 
+// Alias pour compatibilité
+function renderPdfList(){ renderFileList(); }
+
+function deleteFile(idx){
+  const files=getPdfs(currentChapId);
+  files.splice(idx,1);
+  setPdfs(currentChapId,files); renderFileList(); updatePill(currentChapId); updateStats();
+  showToast('🗑 Fichier supprimé');
+}
+
+// Garder compatibilité
 function deletePdf(i){
-  const pdfs=getPdfs(currentChapId); pdfs.splice(i,1);
-  setPdfs(currentChapId,pdfs); renderPdfList(); updatePill(currentChapId); updateStats();
-  showToast('🗑 PDF supprimé');
+  const files=getPdfs(currentChapId); files.splice(i,1);
+  setPdfs(currentChapId,files); renderFileList(); updatePill(currentChapId); updateStats();
+  showToast('🗑 Fichier supprimé');
 }
 
 function updatePill(id){
-  const pdfs=getPdfs(id);
+  const files=getPdfs(id);
   const el=document.getElementById('pill-'+id);
   if(!el)return;
-  el.className='pdf-pill '+(pdfs.length?'has':'empty');
-  el.textContent=pdfs.length?pdfs.length+' PDF':'Aucun PDF';
+  const hasPdf=files.some(f=>f.fileType==='pdf'||!f.fileType);
+  const hasImg=files.some(f=>f.fileType==='image');
+  let label = files.length===0 ? 'Aucun fichier'
+    : (hasPdf&&hasImg) ? files.length+' fichiers'
+    : hasImg ? files.length+(files.length>1?' images':' image')
+    : files.length+' PDF';
+  el.className='pdf-pill '+(files.length?'has':'empty');
+  el.textContent=label;
 }
 
 // ════════════════════════════════════════════
 //  FILE HANDLING
 // ════════════════════════════════════════════
 function addFiles(files){
-  const pdfs=getPdfs(currentChapId);
+  const stored=getPdfs(currentChapId);
+  const allowImg=(currentSection_modal==='ressources');
   Array.from(files).forEach(file=>{
-    if(file.type!=='application/pdf'){showToast('⚠️ Pas un PDF : '+file.name);return;}
-    if(file.size>15*1024*1024){showToast('⚠️ Trop lourd (max 15 Mo) : '+file.name);return;}
+    const isPdf = file.type==='application/pdf';
+    const isImg = file.type.startsWith('image/');
+    if(!isPdf && !(allowImg && isImg)){ showToast('⚠️ Type non accepté : '+file.name); return; }
+    if(file.size>15*1024*1024){ showToast('⚠️ Trop lourd (max 15 Mo) : '+file.name); return; }
     const r=new FileReader();
     r.onload=ev=>{
-      pdfs.push({name:file.name,size:file.size,data:ev.target.result});
-      setPdfs(currentChapId,pdfs);
-      renderPdfList(); updatePill(currentChapId); updateStats();
-      showToast('✅ PDF ajouté !');
+      stored.push({name:file.name, size:file.size, data:ev.target.result, fileType: isPdf?'pdf':'image'});
+      setPdfs(currentChapId,stored);
+      renderFileList(); updatePill(currentChapId); updateStats();
+      showToast(isPdf?'✅ PDF ajouté !':'✅ Image ajoutée !');
     };
     r.readAsDataURL(file);
   });
